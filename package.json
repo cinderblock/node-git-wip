@@ -1,0 +1,12 @@
+{
+  "name": "node-git-wip",
+  "version": "0.0.0",
+  "description": "git-wip implementation entierly in node",
+  "main": "wip.js",
+  "author": "Cameron Tacklind <cameron@tacklind.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "nodegit": "^0.22.2"
+  }
+}
