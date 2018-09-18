@@ -14,8 +14,11 @@ async function wip(options) {
     options.prefix = options.prefix || 'wip';
     options.message = options.message || 'WIP';
 
-    // options.pathspec = options.pathspec || ['*'];
-    
+    if (options.pathspec === undefined) {
+        options.debug('pathspec default');
+    } else {
+        options.debug('pathspec:', options.pathspec);
+    }
     
     if (typeof options.flags == 'number') {
         if (!Number.isInteger(options.flags) || options.flags < 0 || options.flags > 7) {
