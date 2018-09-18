@@ -150,7 +150,10 @@ async function wip(options) {
         let indexAddRes = await index.addAll(
             options.pathspec,
             options.flags,
-            (path, patternMatch) => {options.debug('index add:', {path, patternMatch}); return 0;}
+            (path, patternMatch) => {
+                options.debug('index add:', {path, patternMatch});
+                return 0;
+            }
         );
 
         options.debug('index add result:', indexAddRes);
