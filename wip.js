@@ -180,7 +180,12 @@ async function wip(options) {
 
 
     } catch (e) {
-        options.debug(step, 'error:', e);
+        let res = {
+            step,
+            error: e,
+        };
+        options.debug('result:', res);
+        return res;
     }
     
 
