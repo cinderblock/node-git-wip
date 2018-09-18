@@ -2,12 +2,10 @@ const path = require('path');
 
 const NodeGit = require('nodegit');
 
-function debug() {
-    console.log.apply(console, arguments);
-}
-
 async function wip(options) {
     options = options || {};
+
+    options.debug = options.debug || console.log;
     
     options.repoPath = options.repoPath || path.resolve();
 
@@ -23,11 +21,11 @@ async function wip(options) {
         if (!Number.isInteger(options.flags) || options.flags < 0 || options.flags > 7) {
             throw Error('Bad flags');
         }
-        debug('user flags:', flags);
+        options.debug('user flags:', flags);
     } else if (options.flags === undefined) {
         // options.flags = NodeGit.Index.ADD_OPTION.ADD_DEFAULT;
         
-        debug('flags default');
+        options.debug('flags default');
     } else {
         let flags = options.flags;
 
@@ -37,7 +35,7 @@ async function wip(options) {
         if (options.flags.checkPathspec) flags += NodeGit.Index.ADD_OPTION.ADD_CHECK_PATHSPEC;
 
         options.flags = flags;
-        debug('flags:', options.flags);
+        options.debug('flags:', options.flags);
     }
 
 
@@ -51,8 +49,8 @@ async function wip(options) {
     let step;
     function debugStep(s) {
         step = s;
-        if (false) {
-            debug('step:', step);
+        if (options.debugSteps) {
+            options.debug('step:', step);
         }
     }
     
@@ -88,7 +86,7 @@ async function wip(options) {
         } else {
             throw Error('what the heck? How did we get here...');
         }
-        debug('author:', options.author.toString());
+        options.debug('author:', options.author.toString());
 
         if (!options.committer) {
             options.committer = options.author;
@@ -114,7 +112,7 @@ async function wip(options) {
         } else {
             throw Error('what the heck? How did we get here...');
         }
-        debug('committer:', options.committer.toString());
+        options.debug('committer:', options.committer.toString());
 
         debugStep('get head');
         let head = await repo.head();
@@ -125,24 +123,24 @@ async function wip(options) {
         if (!headShortName) throw Error('Unexpected branch name: ' + head.name());
         headShortName = headShortName[1];
 
-        debug('headShortName:', headShortName);
+        options.debug('headShortName:', headShortName);
 
         let prefixedShortName = options.useNestedPrefix ? headShortName.replace(/^(.*\/)?([^/]+)$/, `$1${options.prefix}/$2`) : (options.prefix + '/' + headShortName);
         
-        debug('prefixedShortName:', prefixedShortName);
+        options.debug('prefixedShortName:', prefixedShortName);
 
         let branch;
         try {
             debugStep('create branch');
             branch = await repo.createBranch(prefixedShortName, head.target(), false);
-            debug('new branch created:', branch.name());
+            options.debug('new branch created:', branch.name());
         } catch (e) {
             debugStep('get branch');
             branch = await repo.getBranch(prefixedShortName);
-            debug('use existing branch:', branch.name());
+            options.debug('use existing branch:', branch.name());
         }
 
-        debug('branch:', branch.target());
+        options.debug('branch:', branch.target());
 
         // debugStep('set head');
         // await repo.setHead(branch.name());
@@ -154,10 +152,10 @@ async function wip(options) {
         let indexAddRes = await index.addAll(
             options.pathspec,
             options.flags,
-            (path, patternMatch) => {debug('index add:', {path, patternMatch}); return 0;}
+            (path, patternMatch) => {options.debug('index add:', {path, patternMatch}); return 0;}
         );
 
-        debug('index add result:', indexAddRes);
+        options.debug('index add result:', indexAddRes);
 
         debugStep('index write');
         await index.write();
@@ -183,12 +181,12 @@ async function wip(options) {
             latestHash: branch.target().tostrS(),
             branchName: branch.name(),
         };
-        debug('result:', res);
+        options.debug('result:', res);
         return res;
 
 
     } catch (e) {
-        debug(step, 'error:', e);
+        options.debug(step, 'error:', e);
     }
     
 
