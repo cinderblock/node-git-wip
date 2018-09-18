@@ -26,8 +26,6 @@ async function wip(options) {
         }
         options.debug('user flags:', flags);
     } else if (options.flags === undefined) {
-        // options.flags = NodeGit.Index.ADD_OPTION.ADD_DEFAULT;
-        
         options.debug('flags default');
     } else {
         let flags = options.flags;
@@ -145,9 +143,6 @@ async function wip(options) {
 
         options.debug('branch:', branch.target());
 
-        // debugStep('set head');
-        // await repo.setHead(branch.name());
-
         debugStep('refresh index');
         let index = await repo.refreshIndex();
 
@@ -175,10 +170,6 @@ async function wip(options) {
             tree,
             [branch.target()]
         );
-
-
-        // debugStep('set head back');
-        // await repo.setHead(head.name());
 
         let res = {
             latestHash: branch.target().tostrS(),
