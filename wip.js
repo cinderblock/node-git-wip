@@ -5,7 +5,7 @@ const path = require('path');
 const NodeGit = require('nodegit');
 const cosmiconfig = require('cosmiconfig');
 
-function shortBranchName(long) {
+function branchShortName(long) {
   let res = long.match(/^refs\/heads\/(.+)$/);
 
   if (!res) throw Error('Unexpected branch name: ' + long);
@@ -221,7 +221,7 @@ async function wip(options) {
     let branchName = branch.name();
 
     debugStep('get branch short name');
-    let branchNameShort = shortBranchName(branchName);
+    let branchNameShort = branchShortName(branchName);
 
     debugStep('create prefixed commit');
     let commit = await repo.createCommit(
