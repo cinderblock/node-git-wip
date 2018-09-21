@@ -1,6 +1,7 @@
 const path = require('path');
 
 const NodeGit = require('nodegit');
+const cosmiconfig = require('cosmiconfig');
 
 async function wip(options) {
     let step = 'init';
@@ -12,23 +13,46 @@ async function wip(options) {
     }
     
     try {
+        debugStep('read config');
+        let config = (await cosmiconfig('node-git-wip').search()) || {};
+        
         options = options || {};
         
-        options.debug = options.debug || console.log;
+        if (options.debug === undefined) {
+            options.debug = config.debug === undefined ? console.log : config.debug;
+        }
+
+        if (typeof options.debug == 'function') {
+            // all set
+        } else if (options.debug == 'stdout') {
+            options.debug = console.log;
+        } else if (options.debug == 'stderr') {
+            options.debug = console.error;
+        } else if (!options.debug || options.debug == 'off') {
+            options.debug = () => {};
+        } else {
+            throw Error('Invalid debug option: ' + options.debug);
+        }
         
-        options.repoPath = options.repoPath || path.resolve();
+        options.repoPath = options.repoPath || config.repoPath || path.resolve();
 
+        if (options.discoverAcrossFs === undefined) options.discoverAcrossFs = config.discoverAcrossFs;
         options.discoverAcrossFs = options.discoverAcrossFs ? 1 : 0;
-        options.ceilingDirs = options.ceilingDirs || '';
-        options.prefix = options.prefix || 'wip';
-        options.message = options.message || 'WIP';
 
+        options.ceilingDirs = options.ceilingDirs || config.ceilingDirs || '';
+        options.prefix = options.prefix || config.prefix || 'wip';
+        options.message = options.message || config.message || 'WIP';
+        options.postfix = options.postfix || config.postfix;
+
+        if (options.pathspec === undefined) options.pathspec = config.pathspec;
         if (options.pathspec === undefined) {
             options.debug('pathspec default');
         } else {
             options.debug('pathspec:', options.pathspec);
         }
         
+        // TODO: Get fancy and merge these objects
+        if (options.flags === undefined) options.flags = config.flags;
         if (typeof options.flags == 'number') {
             if (!Number.isInteger(options.flags) || options.flags < 0 || options.flags > 7) {
                 throw Error('Bad flags');
@@ -48,13 +72,13 @@ async function wip(options) {
             options.debug('flags:', options.flags);
         }
 
-
+        if (options.useNestedPrefix === undefined) options.useNestedPrefix = config.useNestedPrefix;
         if (options.useNestedPrefix === undefined || options.useNestedPrefix === null) {
             options.useNestedPrefix = true;
         }
 
+        if (options.ceilingDirs === undefined) options.ceilingDirs = config.ceilingDirs;
         console.log('ceiling dirs:', options.ceilingDirs);
-    
     
         debugStep('find');
         options.repoPath = await NodeGit.Repository.discover(options.repoPath, options.discoverAcrossFs, options.ceilingDirs);
@@ -62,6 +86,7 @@ async function wip(options) {
         debugStep('open');
         let repo = await NodeGit.Repository.open(options.repoPath);
 
+        if (options.author === undefined) options.author = config.author;
         if (!options.author) {
             debugStep('get default signature');
             options.author = repo.defaultSignature();
@@ -89,6 +114,7 @@ async function wip(options) {
         }
         options.debug('author:', options.author.toString());
 
+        if (options.committer === undefined) options.committer = config.committer;
         if (!options.committer) {
             options.committer = options.author;
         } else if (typeof options.committer == 'string') {
@@ -126,7 +152,7 @@ async function wip(options) {
 
         options.debug('headShortName:', headShortName);
 
-        options.separator = options.separator || '/';
+        options.separator = options.separator || config.separator || '/';
 
         let prefixedShortName;
         if (typeof options.prefix == 'function') {
@@ -155,6 +181,7 @@ async function wip(options) {
         }
 
         let parents;
+        if (options.historyStrategy === undefined) options.historyStrategy = config.historyStrategy;
         if (newBranch || options.historyStrategy == 'parallel' || options.historyStrategy == 'manual') {
             parents = [branch.target()];
         } else if (options.historyStrategy === undefined || options.historyStrategy == 'merge') {
@@ -224,4 +251,3 @@ async function wip(options) {
 module.exports = wip;
 
 if (require.main === module) wip();
-    
