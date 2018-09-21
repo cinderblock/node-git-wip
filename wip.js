@@ -253,4 +253,4 @@ async function wip(options) {
 
 module.exports = wip;
 
-if (require.main === module) console.log(wip());
+if (require.main === module) wip().then(console.log);
