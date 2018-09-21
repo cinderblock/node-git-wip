@@ -4,7 +4,8 @@ const NodeGit = require('nodegit');
 const cosmiconfig = require('cosmiconfig');
 
 async function wip(options) {
-    let step = 'init';
+    
+    let step = 'read config';
     function debugStep(s) {
         step = s;
         if (options.debugSteps) {
@@ -13,7 +14,6 @@ async function wip(options) {
     }
     
     try {
-        debugStep('read config');
         let config = (await cosmiconfig('node-git-wip').search()) || {};
         
         options = options || {};
