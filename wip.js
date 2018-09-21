@@ -195,6 +195,7 @@ async function wip(options) {
       branch = await repo.createBranch(prefixedShortName, head.target(), true);
       options.debug('new branch created:', branch.name());
       parents = [head.target()];
+      newBranch = 'forced';
     } else {
       throw Error('Unknown parent strategy: ' + options.historyStrategy);
     }
