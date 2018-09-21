@@ -19,9 +19,7 @@ async function wip(options) {
 
     if (options.debugSteps === undefined) options.debugSteps = config.debugSteps;
 
-    if (options.debug === undefined) {
-      options.debug = config.debug === undefined ? console.log : config.debug;
-    }
+    if (options.debug === undefined) options.debug = config.debug;
 
     if (typeof options.debug == 'function') {
       // all set
@@ -240,4 +238,4 @@ async function wip(options) {
 
 module.exports = wip;
 
-if (require.main === module) wip();
+if (require.main === module) console.log(wip());
