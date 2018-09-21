@@ -12,48 +12,48 @@ async function wip(options) {
     }
     
     try {
-    options = options || {};
-    
-    options.debug = options.debug || console.log;
-    
-    options.repoPath = options.repoPath || path.resolve();
+        options = options || {};
+        
+        options.debug = options.debug || console.log;
+        
+        options.repoPath = options.repoPath || path.resolve();
 
-    options.discoverAcrossFs = options.discoverAcrossFs ? 1 : 0;
-    options.ceilingDirs = options.ceilingDirs || '';
-    options.prefix = options.prefix || 'wip';
-    options.message = options.message || 'WIP';
+        options.discoverAcrossFs = options.discoverAcrossFs ? 1 : 0;
+        options.ceilingDirs = options.ceilingDirs || '';
+        options.prefix = options.prefix || 'wip';
+        options.message = options.message || 'WIP';
 
-    if (options.pathspec === undefined) {
-        options.debug('pathspec default');
-    } else {
-        options.debug('pathspec:', options.pathspec);
-    }
-    
-    if (typeof options.flags == 'number') {
-        if (!Number.isInteger(options.flags) || options.flags < 0 || options.flags > 7) {
-            throw Error('Bad flags');
+        if (options.pathspec === undefined) {
+            options.debug('pathspec default');
+        } else {
+            options.debug('pathspec:', options.pathspec);
         }
-        options.debug('user flags:', flags);
-    } else if (options.flags === undefined) {
-        options.debug('flags default');
-    } else {
-        let flags = options.flags;
+        
+        if (typeof options.flags == 'number') {
+            if (!Number.isInteger(options.flags) || options.flags < 0 || options.flags > 7) {
+                throw Error('Bad flags');
+            }
+            options.debug('user flags:', flags);
+        } else if (options.flags === undefined) {
+            options.debug('flags default');
+        } else {
+            let flags = options.flags;
 
-        flags = NodeGit.Index.ADD_OPTION.ADD_DEFAULT;
-        if (options.flags.force) flags += NodeGit.Index.ADD_OPTION.ADD_FORCE;
-        if (options.flags.disablePathspecMatch) flags += NodeGit.Index.ADD_OPTION.ADD_DISABLE_PATHSPEC_MATCH;
-        if (options.flags.checkPathspec) flags += NodeGit.Index.ADD_OPTION.ADD_CHECK_PATHSPEC;
+            flags = NodeGit.Index.ADD_OPTION.ADD_DEFAULT;
+            if (options.flags.force) flags += NodeGit.Index.ADD_OPTION.ADD_FORCE;
+            if (options.flags.disablePathspecMatch) flags += NodeGit.Index.ADD_OPTION.ADD_DISABLE_PATHSPEC_MATCH;
+            if (options.flags.checkPathspec) flags += NodeGit.Index.ADD_OPTION.ADD_CHECK_PATHSPEC;
 
-        options.flags = flags;
-        options.debug('flags:', options.flags);
-    }
+            options.flags = flags;
+            options.debug('flags:', options.flags);
+        }
 
 
-    if (options.useNestedPrefix === undefined || options.useNestedPrefix === null) {
-        options.useNestedPrefix = true;
-    }
+        if (options.useNestedPrefix === undefined || options.useNestedPrefix === null) {
+            options.useNestedPrefix = true;
+        }
 
-    console.log('ceiling dirs:', options.ceilingDirs);
+        console.log('ceiling dirs:', options.ceilingDirs);
     
     
         debugStep('find');
