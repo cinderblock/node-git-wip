@@ -208,9 +208,17 @@ async function wip(options) {
     debugStep('index write tree');
     let tree = await index.writeTree();
 
+    let branchName = branch.name();
+
+    debugStep('get branch short name');
+    let branchNameShort = branchName.match(/^refs\/heads\/(.+)$/);
+
+    if (!branchNameShort) throw Error('Unexpected branch name: ' + branchName);
+    branchNameShort = branchNameShort[1];
+
     debugStep('create prefixed commit');
     let commit = await repo.createCommit(
-      branch.name(),
+      branchName,
       options.author,
       options.committer,
       options.message,
@@ -220,7 +228,8 @@ async function wip(options) {
 
     let res = {
       latestHash: branch.target().tostrS(),
-      branchName: branch.name(),
+      branchName,
+      branchNameShort,
     };
     options.debug('result:', res);
     return res;
