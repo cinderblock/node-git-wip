@@ -28,29 +28,29 @@ All options are passed as an object to the exported function.
 Options are also loaded from any configuration file according to [cosmiconfig](https://www.npmjs.com/package/cosmiconfig)'s search pattern.
 Options from config files are merged with options passed to the function with the latter taking precedence.
 
-### All options
+#### All options
 
 Any option left undefined will default to something sensible.
 
-#### `author`
+##### `author`
 
 Author of wip commit.
 
 _Default:_ Default author from repository
 
-#### `ceilingDirs`
+##### `ceilingDirs`
 
 How high up the directory tree should we search for a `.git` folder indicating a repository?
 
 _Default:_ `''`
 
-#### `committer`
+##### `committer`
 
 Committer of wip commit.
 
 _Default:_ `author`
 
-#### `debug`
+##### `debug`
 
 Control where debug data is sent.
 
@@ -61,19 +61,19 @@ _Default:_ `false`
 - `'stderr'` will send to `stderr`.
 - A function can also be passed.
 
-#### `debugSteps`
+##### `debugSteps`
 
 Extra debugging information.
 
 _Default:_ `undefined`
 
-#### `discoverAcrossFs`
+##### `discoverAcrossFs`
 
 When searching parent directories for which git repository to open, controls if we stop when we cross a filesystem boundary.
 
 _Default:_ `false`
 
-#### `flags`
+##### `flags`
 
 Controls the git flags when adding files to the index before committing.
 
@@ -89,7 +89,7 @@ _Default:_ `none`
   }
   ```
 
-#### `historyStrategy`
+##### `historyStrategy`
 
 Controls how history will look
 
@@ -99,27 +99,27 @@ _Default:_ `'merge'`
 - `'parallel'` or `'manual'` does not connect the wip branch to the HEAD branch past the first commit
 - `'clear'` or `'reset'` creates a new branch when HEAD branch has moved forward
 
-#### `message`
+##### `message`
 
 Controls the commit message
 
 _Default:_ `'WIP'`
 
-#### `pathspec`
+##### `pathspec`
 
 Controls which files are added to the WIP commit.
 
 _Default:_ `['*']`
 This option is an array of git [`pathspec`](https://git-scm.com/docs/gitglossary#gitglossary-aiddefpathspecapathspec) strings.
 
-#### `postfix`
+##### `postfix`
 
 Use a postfix string instead of a prefix.
 
 _Default:_ `undefined`
 If defined, `prefix` option is ignored.
 
-#### `prefix`
+##### `prefix`
 
 Controls the prefix added to the current HEAD branch name.
 
@@ -128,19 +128,19 @@ _Default:_ `'wip'`
 - Any sensible non-empty `string` of valid git branch name characters can be used
 - A `function` that takes in the name of the current HEAD branch (_ie_ `'master'`) and returns the new branch name.
 
-#### `repoPath`
+##### `repoPath`
 
 Controls where we start looking for the git repository.
 
 _Default:_ `'.'`
 
-#### `separator`
+##### `separator`
 
 Controls the separator used when constructing the wip branch name from the HEAD branch name.
 
 _Default:_ `'/'`
 
-#### `useNestedPrefix`
+##### `useNestedPrefix`
 
 Controls if, when using branches in "folders", to put all the different wip branches together in one directory at the top level,
 or to put them near each branch.
