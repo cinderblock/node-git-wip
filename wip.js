@@ -15,8 +15,10 @@ async function wip(options) {
     
     try {
         let config = (await cosmiconfig('node-git-wip').search()) || {};
-        
+
         options = options || {};
+        
+        if (options.debugSteps === undefined) options.debugSteps = config.debugSteps;
         
         if (options.debug === undefined) {
             options.debug = config.debug === undefined ? console.log : config.debug;
