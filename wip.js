@@ -85,15 +85,21 @@ async function wip(options) {
 
     console.log('ceiling dirs:', options.ceilingDirs);
 
-    debugStep('find');
-    options.repoPath = await NodeGit.Repository.discover(
-      options.repoPath,
-      options.discoverAcrossFs,
-      options.ceilingDirs
-    );
-
-    debugStep('open');
-    let repo = await NodeGit.Repository.open(options.repoPath);
+    let repo;
+    if (options.repo instanceof NodeGit.Repository) {
+      options.debug('Using passed repository object');
+      repo = options.repo;
+    } else {
+      debugStep('find');
+      options.repoPath = await NodeGit.Repository.discover(
+        options.repoPath,
+        options.discoverAcrossFs,
+        options.ceilingDirs
+      );
+      
+      debugStep('open');
+      repo = await NodeGit.Repository.open(options.repoPath);
+    }
 
     if (options.author === undefined) options.author = config.author;
     if (!options.author) {

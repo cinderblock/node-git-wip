@@ -23,6 +23,7 @@ There are a couple options that more dramatically change the behavior than other
 - `message`
 - `pathspec`
 - `prefix`
+- `repo`
 
 All options are passed as an object to the exported function.
 Options are also loaded from any configuration file according to [cosmiconfig](https://www.npmjs.com/package/cosmiconfig)'s search pattern.
@@ -127,6 +128,14 @@ _Default:_ `'wip'`
 
 - Any sensible non-empty `string` of valid git branch name characters can be used
 - A `function` that takes in the name of the current HEAD branch (_ie_ `'master'`) and returns the new branch name.
+
+##### `repo`
+
+If you already have an instance of `NodeGit.Repository` open, pass it in to reuse it.
+
+_Default:_ `undefined`
+
+If `repo` is defined and the correct type, `repoPath` and related options are ignored.
 
 ##### `repoPath`
 
