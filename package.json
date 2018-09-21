@@ -6,6 +6,9 @@
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "MIT",
   "private": false,
+  "bin": {
+    "git-wip": "wip.js"
+  },
   "scripts": {
     "start": "node .",
     "wip": "node .",
