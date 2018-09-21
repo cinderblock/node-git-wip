@@ -152,6 +152,15 @@ async function wip(options) {
             options.debug('use existing branch:', branch.name());
         }
 
+        let parents;
+        if (options.parentStrategy == 'parallel' || options.parentStrategy == 'manual') {
+            parents = [branch.target()];
+        } else if (options.parentStrategy === undefined || options.parentStrategy == 'merge') {
+            parents = [branch.target(), head.target()];
+        } else {
+            throw Error('Unknown parent strategy: ' + options.parentStrategy);
+        }
+
         options.debug('branch:', branch.target());
 
         debugStep('refresh index');
@@ -182,7 +191,7 @@ async function wip(options) {
             options.committer,
             options.message,
             tree,
-            [branch.target()]
+            parents
         );
 
         let res = {
