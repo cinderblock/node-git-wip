@@ -236,6 +236,7 @@ async function wip(options) {
 
     let res = {
       latestHash: commit.tostrS(),
+      treeHash: tree.tostrS(),
       branchName,
       branchNameShort,
     };
