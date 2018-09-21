@@ -150,22 +150,22 @@ async function wip(options) {
     let head = await repo.head();
 
     debugStep('get head short name');
-    let headShortName = branchShortName(head.name());
+    let headNameShort = branchShortName(head.name());
 
-    options.debug('headShortName:', headShortName);
+    options.debug('headNameShort:', headNameShort);
 
     options.separator = options.separator || config.separator || '/';
 
     let prefixedShortName;
     if (typeof options.prefix == 'function') {
-      prefixedShortName = options.prefix(headShortName);
+      prefixedShortName = options.prefix(headNameShort);
     } else {
       if (options.postfix) {
-        prefixedShortName = headShortName + options.postfix;
+        prefixedShortName = headNameShort + options.postfix;
       } else {
         prefixedShortName = options.useNestedPrefix
-          ? headShortName.replace(/^(.*\/)?([^/]+)$/, `$1${options.prefix}${options.separator}$2`)
-          : options.prefix + options.separator + headShortName;
+          ? headNameShort.replace(/^(.*\/)?([^/]+)$/, `$1${options.prefix}${options.separator}$2`)
+          : options.prefix + options.separator + headNameShort;
       }
     }
 
