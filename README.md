@@ -1,6 +1,6 @@
 # node-git-wip
 
-git-wip implementation entierly in node.
+git-wip implementation entirely in node.
 
 Targeted for use alongside other git [gui] tools and use with automatic deployment scripts.
 
