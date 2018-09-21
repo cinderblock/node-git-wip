@@ -1,6 +1,6 @@
 {
   "name": "node-git-wip",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "git-wip implementation entirely in node",
   "main": "wip.js",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
