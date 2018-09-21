@@ -142,10 +142,12 @@ async function wip(options) {
         options.debug('prefixedShortName:', prefixedShortName);
 
         let branch;
+        let newBranch = false;
         try {
             debugStep('create branch');
             branch = await repo.createBranch(prefixedShortName, head.target(), false);
             options.debug('new branch created:', branch.name());
+            newBranch = true;
         } catch (e) {
             debugStep('get branch');
             branch = await repo.getBranch(prefixedShortName);
@@ -153,12 +155,12 @@ async function wip(options) {
         }
 
         let parents;
-        if (options.parentStrategy == 'parallel' || options.parentStrategy == 'manual') {
+        if (newBranch || options.historyStrategy == 'parallel' || options.historyStrategy == 'manual') {
             parents = [branch.target()];
-        } else if (options.parentStrategy === undefined || options.parentStrategy == 'merge') {
+        } else if (options.historyStrategy === undefined || options.historyStrategy == 'merge') {
             parents = [branch.target(), head.target()];
         } else {
-            throw Error('Unknown parent strategy: ' + options.parentStrategy);
+            throw Error('Unknown parent strategy: ' + options.historyStrategy);
         }
 
         options.debug('branch:', branch.target());
