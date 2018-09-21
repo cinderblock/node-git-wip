@@ -3,8 +3,17 @@ const path = require('path');
 const NodeGit = require('nodegit');
 
 async function wip(options) {
+    let step = 'init';
+    function debugStep(s) {
+        step = s;
+        if (options.debugSteps) {
+            options.debug('step:', step);
+        }
+    }
+    
+    try {
     options = options || {};
-
+    
     options.debug = options.debug || console.log;
     
     options.repoPath = options.repoPath || path.resolve();
@@ -47,15 +56,6 @@ async function wip(options) {
     console.log('ceiling dirs:', options.ceilingDirs);
     
     
-    let step;
-    function debugStep(s) {
-        step = s;
-        if (options.debugSteps) {
-            options.debug('step:', step);
-        }
-    }
-    
-    try {
         debugStep('find');
         options.repoPath = await NodeGit.Repository.discover(options.repoPath, options.discoverAcrossFs, options.ceilingDirs);
         
