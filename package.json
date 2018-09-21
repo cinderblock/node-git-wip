@@ -6,6 +6,10 @@
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "MIT",
   "private": false,
+  "scripts": {
+    "postversion": "npm publish",
+    "postpublish": "git push origin master --tags"
+  },
   "dependencies": {
     "nodegit": "^0.22.2"
   }
