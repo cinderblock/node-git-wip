@@ -77,7 +77,6 @@ async function wip(options) {
       options.useNestedPrefix = true;
     }
 
-    if (options.ceilingDirs === undefined) options.ceilingDirs = config.ceilingDirs;
     console.log('ceiling dirs:', options.ceilingDirs);
 
     debugStep('find');
