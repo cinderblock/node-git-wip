@@ -1,6 +1,6 @@
 {
   "name": "@cinderblock/node-git-wip",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "git-wip implementation entirely in node",
   "main": "wip.js",
   "author": "Cameron Tacklind <cameron@tacklind.com>",
