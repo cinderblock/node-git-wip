@@ -64,8 +64,7 @@ async function wip(options) {
 
       flags = NodeGit.Index.ADD_OPTION.ADD_DEFAULT;
       if (options.flags.force) flags += NodeGit.Index.ADD_OPTION.ADD_FORCE;
-      if (options.flags.disablePathspecMatch)
-        flags += NodeGit.Index.ADD_OPTION.ADD_DISABLE_PATHSPEC_MATCH;
+      if (options.flags.disablePathspecMatch) flags += NodeGit.Index.ADD_OPTION.ADD_DISABLE_PATHSPEC_MATCH;
       if (options.flags.checkPathspec) flags += NodeGit.Index.ADD_OPTION.ADD_CHECK_PATHSPEC;
 
       options.flags = flags;
