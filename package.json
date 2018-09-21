@@ -6,6 +6,10 @@
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "MIT",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cinderblock/node-git-wip.git"
+  },
   "bin": {
     "git-wip": "wip.js"
   },
