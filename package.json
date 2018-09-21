@@ -15,5 +15,8 @@
   "dependencies": {
     "cosmiconfig": "^5.0.6",
     "nodegit": "^0.22.2"
+  },
+  "devDependencies": {
+    "prettier": "^1.14.3"
   }
 }
