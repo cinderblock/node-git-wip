@@ -239,6 +239,8 @@ async function wip(options) {
       treeHash: tree.tostrS(),
       branchName,
       branchNameShort,
+      headName: head.name(),
+      headNameShort,
     };
     options.debug('result:', res);
     return res;
