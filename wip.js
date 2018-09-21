@@ -126,7 +126,18 @@ async function wip(options) {
 
         options.debug('headShortName:', headShortName);
 
-        let prefixedShortName = options.useNestedPrefix ? headShortName.replace(/^(.*\/)?([^/]+)$/, `$1${options.prefix}/$2`) : (options.prefix + '/' + headShortName);
+        options.separator = options.separator || '/';
+
+        let prefixedShortName;
+        if (typeof options.prefix == 'function') {
+            prefixedShortName = options.prefix(headShortName);
+        } else {
+            if (options.postfix) {
+                prefixedShortName = headShortName + options.postfix;
+            } else {
+                prefixedShortName = options.useNestedPrefix ? headShortName.replace(/^(.*\/)?([^/]+)$/, `$1${options.prefix}${options.separator}$2`) : (options.prefix + options.separator + headShortName);
+            }
+        }
         
         options.debug('prefixedShortName:', prefixedShortName);
 
