@@ -83,7 +83,7 @@ async function wip(options) {
       options.useNestedPrefix = true;
     }
 
-    console.log('ceiling dirs:', options.ceilingDirs);
+    options.debug('ceilingceiling dirs:', options.ceilingDirs);
 
     let repo;
     if (options.repo instanceof NodeGit.Repository) {
