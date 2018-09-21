@@ -25,14 +25,12 @@ async function wip(options) {
 
     if (typeof options.debug == 'function') {
       // all set
-    } else if (options.debug == 'stdout') {
-      options.debug = console.log;
     } else if (options.debug == 'stderr') {
       options.debug = console.error;
     } else if (!options.debug || options.debug == 'off') {
       options.debug = () => {};
     } else {
-      throw Error('Invalid debug option: ' + options.debug);
+      options.debug = console.log;
     }
 
     options.repoPath = options.repoPath || config.repoPath || path.resolve();
