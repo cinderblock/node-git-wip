@@ -159,6 +159,11 @@ async function wip(options) {
             parents = [branch.target()];
         } else if (options.historyStrategy === undefined || options.historyStrategy == 'merge') {
             parents = [branch.target(), head.target()];
+        } else if (options.historyStrategy == 'clear' || options.historyStrategy == 'reset') {
+            debugStep('create branch force');
+            branch = await repo.createBranch(prefixedShortName, head.target(), true);
+            options.debug('new branch created:', branch.name());
+            parents = [head.target()];
         } else {
             throw Error('Unknown parent strategy: ' + options.historyStrategy);
         }
