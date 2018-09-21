@@ -15,6 +15,37 @@ When subsequent calls to `git-wip` are made, it simply continues the previously 
 
 By default, this `git-wip` will mark the current head as a _parent_ if the latest wip.
 
+## Install
+
+```
+$ yarn add @cinderblock/node-git-wip --dev
+```
+
+My use cases are usually only needed on development machines and I preffer not to install packages globally.
+All the features should work just fine if installed globally.
+
+## Usage
+
+#### Module
+
+```
+const wip = require('@cinderblock/node-git-wip');
+
+wip({
+    historyStrategy: 'manual',
+    // ...
+});
+```
+
+#### cli
+
+```
+$ git-wip
+```
+
+There are currently no command line options.
+To control features, use a configuration file.
+
 ## Options
 
 There are a couple options that more dramatically change the behavior than others.
