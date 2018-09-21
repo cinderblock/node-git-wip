@@ -1,5 +1,5 @@
 {
-  "name": "node-git-wip",
+  "name": "@cinderblock/node-git-wip",
   "version": "0.1.0",
   "description": "git-wip implementation entirely in node",
   "main": "wip.js",
