@@ -17,13 +17,17 @@
     "start": "node .",
     "wip": "node .",
     "postversion": "npm publish",
-    "postpublish": "git push origin master --tags"
+    "postpublish": "git push origin master --tags",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "dependencies": {
     "cosmiconfig": "^5.0.7",
-    "nodegit": "^0.24.1"
+    "nodegit": "^0.24.1",
+    "snyk": "^1.192.0"
   },
   "devDependencies": {
     "prettier": "^1.16.4"
-  }
+  },
+  "snyk": true
 }
