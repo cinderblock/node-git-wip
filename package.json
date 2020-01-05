@@ -20,10 +20,10 @@
     "postpublish": "git push origin master --tags"
   },
   "dependencies": {
-    "cosmiconfig": "^5.0.7",
-    "nodegit": "^0.24.1"
+    "cosmiconfig": "^6.0.0",
+    "nodegit": "^0.26.3"
   },
   "devDependencies": {
-    "prettier": "^1.16.4"
+    "prettier": "^1.19.1"
   }
 }
