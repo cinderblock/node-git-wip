@@ -1,29 +1,58 @@
 {
   "name": "@cinderblock/node-git-wip",
   "version": "0.6.3",
-  "description": "git-wip implementation entirely in node",
-  "main": "wip.js",
-  "author": "Cameron Tacklind <cameron@tacklind.com>",
-  "license": "MIT",
-  "private": false,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/cinderblock/node-git-wip.git"
+  "description": "git-wip implementation in node, using the git CLI (no native modules)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "bin": {
-    "git-wip": "wip.js"
+    "git-wip": "dist/cli.js"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map"
+  ],
+  "engines": {
+    "node": ">=22"
   },
   "scripts": {
-    "start": "node .",
-    "wip": "node .",
-    "postversion": "npm publish",
-    "postpublish": "git push origin master --tags"
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --test test/wip.test.ts",
+    "lint": "tsc --noEmit && prettier --check .",
+    "format": "prettier --write .",
+    "prepublishOnly": "bun run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cinderblock/node-git-wip.git"
+  },
+  "keywords": [
+    "git",
+    "wip",
+    "git-wip",
+    "work-in-progress",
+    "snapshot"
+  ],
+  "author": "Cameron Tacklind <cameron@tacklind.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cinderblock/node-git-wip/issues"
+  },
+  "homepage": "https://github.com/cinderblock/node-git-wip#readme",
   "dependencies": {
-    "cosmiconfig": "^6.0.0",
-    "nodegit": "^0.26.3"
+    "cosmiconfig": "^9.0.2"
   },
   "devDependencies": {
-    "prettier": "^1.19.1"
+    "@types/node": "^22.20.5",
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2"
   }
 }
