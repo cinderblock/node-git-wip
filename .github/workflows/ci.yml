@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run build
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      # Install the packed tarball like a consumer would and run the bin in a scratch repo.
+      - name: Smoke test packed package
+        run: |
+          npm pack
+          tarball="$PWD/$(ls cinderblock-node-git-wip-*.tgz)"
+          cd "$RUNNER_TEMP"
+          mkdir consumer && cd consumer
+          npm init -y > /dev/null
+          npm install "$tarball"
+          git init -q -b master repo && cd repo
+          git -c user.name=CI -c user.email=ci@example.com commit -q --allow-empty -m init
+          echo hi > file.txt
+          ../node_modules/.bin/git-wip | tee out.txt
+          grep -q "branchNameShort: 'wip/master'" out.txt
+          git cat-file -p wip/master
+          node -e "const w = require('@cinderblock/node-git-wip'); if (typeof w !== 'function') process.exit(1)"
+          node --input-type=module -e "import w, { wip } from '@cinderblock/node-git-wip'; if (w !== wip) process.exit(1)"
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ['22', '24', '26']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      # Library targets Node: tests run on Node (see engines), installed with Bun.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: node --test test/wip.test.ts
