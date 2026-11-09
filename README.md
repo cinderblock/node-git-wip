@@ -23,7 +23,7 @@ By default, this `git-wip` will mark the current head as a _parent_ of the lates
 - Node.js 22 or newer
 - nodegit publishes prebuilt binaries for Node 22 and 24 on Windows x64, Linux x64 and macOS (Intel and Apple
   Silicon). On other Node versions (such as 26) or platforms, nodegit compiles libgit2 during install, which needs a
-  C++ toolchain: Visual Studio with the C++ workload and Windows SDK 10.0.22621 on Windows, Xcode command line tools
+  C++ toolchain: Visual Studio 2022 (nodegit's node-gyp doesn't recognise Visual Studio 2026 yet) with the C++ workload and Windows SDK 10.0.22621 on Windows, Xcode command line tools
   on macOS, or `build-essential`, `libssl-dev`, `libkrb5-dev` and `pkg-config` on Linux.
 - Bun users: nodegit is listed in `trustedDependencies` here, but your project must trust it too
   (`bun pm trust nodegit`) so its install script can fetch the native module.

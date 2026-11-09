@@ -44,6 +44,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node: ['22', '24', '26']
+        # Node 26 on Windows compiles nodegit from source. nodegit's bundled node-gyp (11.5) can't find Visual
+        # Studio 18 (2026), which windows-latest ships, so build that one on the VS 2022 image.
+        exclude:
+          - os: windows-latest
+            node: '26'
+        include:
+          - os: windows-2022
+            node: '26'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
