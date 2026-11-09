@@ -8,7 +8,6 @@ import path from 'node:path';
 import { after, describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import wip, { type WipFailure, type WipOptions, type WipResult } from '../src/index.ts';
-import { parseSignature, formatSignature } from '../src/signature.ts';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const tempRoot = realpathSync(mkdtempSync(path.join(tmpdir(), 'node-git-wip-test-')));
@@ -30,8 +29,6 @@ function gitEnv(): NodeJS.ProcessEnv {
   return env;
 }
 writeFileSync(path.join(tempRoot, 'gitconfig-global'), '');
-// wip() itself spawns git with our environment, so isolate it from global config too.
-Object.assign(process.env, { GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: path.join(tempRoot, 'gitconfig-global') });
 
 function write(repo: string, file: string, content: string) {
   mkdirSync(path.dirname(path.join(repo, file)), { recursive: true });
@@ -201,13 +198,25 @@ describe('commit object', () => {
     assert.ok(raw.endsWith('\n\nWIP'));
   });
 
-  test('falls back to unknown <unknown@example.com> without user config', async () => {
+  test('falls back to unknown <unknown@example.com> without user config', () => {
     const repo = makeRepo();
     git(repo, 'config', '--unset', 'user.name');
     git(repo, 'config', '--unset', 'user.email');
-    const r = await ok({ repoPath: repo });
+    // libgit2 ignores GIT_CONFIG_GLOBAL and reads the home directory once, from the C runtime's copy of the
+    // environment (which, on Windows, later process.env changes don't reach). So run it in a child process whose
+    // home is an empty directory, to keep the developer's own ~/.gitconfig out.
+    const home = path.join(tempRoot, `home${++repoCount}`);
+    mkdirSync(home);
+    const res = spawnSync(process.execPath, [path.join(root, 'src', 'cli.ts')], {
+      cwd: repo,
+      encoding: 'utf8',
+      windowsHide: true,
+      env: { ...gitEnv(), HOME: home, USERPROFILE: home, HOMEDRIVE: '', HOMEPATH: '', XDG_CONFIG_HOME: home },
+    });
+    assert.equal(res.status, 0, res.stderr);
+    assert.match(res.stdout, /latestHash/, res.stdout);
     assert.match(
-      git(repo, 'log', '-1', '--format=%an <%ae>|%cn <%ce>', r.latestHash),
+      git(repo, 'log', '-1', '--format=%an <%ae>|%cn <%ce>', 'wip/master'),
       /^unknown <unknown@example\.com>\|unknown <unknown@example\.com>$/
     );
   });
@@ -230,19 +239,27 @@ describe('commit object', () => {
   });
 });
 
-describe('signature parsing (libgit2 git_signature_from_buffer)', () => {
-  test('full', () => {
-    assert.equal(formatSignature(parseSignature('  Name  <a@b.c> 1234 -0130')), 'Name <a@b.c> 1234 -0130');
+describe('author strings (libgit2 git_signature_from_buffer)', () => {
+  async function authorLine(author: string): Promise<string> {
+    const repo = makeRepo();
+    const r = await ok({ repoPath: repo, author });
+    return /^author (.*)$/m.exec(git(repo, 'cat-file', 'commit', r.latestHash))![1]!;
+  }
+
+  test('full', async () => {
+    assert.equal(await authorLine('  Name  <a@b.c> 1234 -0130'), 'Name <a@b.c> 1234 -0130');
   });
-  test('missing time is the epoch, missing timezone is +0000', () => {
-    assert.equal(formatSignature(parseSignature('Name <a@b.c>')), 'Name <a@b.c> 0 +0000');
-    assert.equal(formatSignature(parseSignature('Name <a@b.c> 99')), 'Name <a@b.c> 99 +0000');
+  test('missing time is the epoch, missing timezone is +0000', async () => {
+    assert.equal(await authorLine('Name <a@b.c>'), 'Name <a@b.c> 0 +0000');
+    assert.equal(await authorLine('Name <a@b.c> 99'), 'Name <a@b.c> 99 +0000');
   });
-  test('-0000 is preserved', () => {
-    assert.equal(formatSignature(parseSignature('Name <a@b.c> 99 -0000')), 'Name <a@b.c> 99 -0000');
+  test('-0000 is preserved', async () => {
+    assert.equal(await authorLine('Name <a@b.c> 99 -0000'), 'Name <a@b.c> 99 -0000');
   });
-  test('malformed email', () => {
-    assert.throws(() => parseSignature('Name a@b.c'), /malformed e-mail/);
+  test('malformed email', async () => {
+    const f = await fails({ repoPath: makeRepo(), author: 'Name a@b.c' });
+    assert.equal(f.step, 'get string signature');
+    assert.match(String(f.error), /malformed e-mail/);
   });
 });
 
@@ -303,10 +320,10 @@ describe('pathspec and flags', () => {
     assert.ok(!files(repo, r.treeHash).includes('doomed.txt'));
   });
 
-  test('disablePathspecMatch treats globs literally', async () => {
+  test('disablePathspecMatch is passed to libgit2, which still expands globs in addAll', async () => {
     const repo = dirtyRepo();
     const r = await ok({ repoPath: repo, pathspec: ['*.md', 'sub'], flags: { disablePathspecMatch: true } });
-    assert.deepEqual(files(repo, r.treeHash), ['.gitignore', 'doomed.txt', 'sub/b.md', 'tracked.txt']);
+    assert.deepEqual(files(repo, r.treeHash), ['.gitignore', 'a.md', 'doomed.txt', 'sub/b.md', 'tracked.txt']);
   });
 
   test('force adds ignored files', async () => {

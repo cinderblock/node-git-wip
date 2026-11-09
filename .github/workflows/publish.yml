@@ -14,17 +14,18 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - run: bun install --frozen-lockfile
-      - run: bun run lint
+      # Node first: nodegit's install script fetches the native module for the node on PATH.
       # npm CLI for tests on Node, trusted-publishing OIDC exchange and provenance signing.
       # Trusted Publishing needs npm CLI 11.5.1+; Node 22 LTS ships with 10.x.
       # No registry-url on setup-node: its placeholder authToken blocks OIDC.
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
       - run: node --test test/wip.test.ts
       - run: bun run build
       - run: npm install -g npm@latest

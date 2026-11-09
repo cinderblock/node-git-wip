@@ -4,8 +4,7 @@ git-wip implementation in node.
 
 Targeted for use alongside other git [gui] tools and use with automatic deployment scripts.
 
-Since v1 it drives the `git` command line (plumbing commands only) instead of the native `nodegit` module,
-so there is nothing to compile on install.
+It uses [nodegit](https://www.nodegit.org/) (libgit2 bindings), so it doesn't need `git` itself.
 
 ## How this `git-wip` works
 
@@ -22,7 +21,12 @@ By default, this `git-wip` will mark the current head as a _parent_ of the lates
 ## Requirements
 
 - Node.js 22 or newer
-- `git` 2.25 or newer on the `PATH`
+- nodegit publishes prebuilt binaries for Node 22 and 24 on Windows x64, Linux x64 and macOS (Intel and Apple
+  Silicon). On other Node versions (such as 26) or platforms, nodegit compiles libgit2 during install, which needs a
+  C++ toolchain: Visual Studio with the C++ workload and Windows SDK 10.0.22621 on Windows, Xcode command line tools
+  on macOS, or `build-essential`, `libssl-dev`, `libkrb5-dev` and `pkg-config` on Linux.
+- Bun users: nodegit is listed in `trustedDependencies` here, but your project must trust it too
+  (`bun pm trust nodegit`) so its install script can fetch the native module.
 
 ## Install
 
@@ -153,13 +157,17 @@ _Default:_ `none`
 
 - An integer number from 0-7 where each bit corresponds to a flag (`1` force, `2` disablePathspecMatch, `4` checkPathspec)
 - An `object` with properties controlling the flags and the following shape:
+
   ```
   {
     force: false, // also add ignored files
-    disablePathspecMatch: false, // treat pathspec entries as literal paths, not globs
+    disablePathspecMatch: false, // libgit2's GIT_INDEX_ADD_DISABLE_PATHSPEC_MATCH (globs still match, see below)
     checkPathspec: false, // fail if a pathspec entry exactly names an untracked, ignored file
   }
   ```
+
+  These are passed straight to libgit2's `git_index_add_all`. In libgit2, `disablePathspecMatch` does not stop
+  `*.md` from matching `a.md` there.
 
 ##### `historyStrategy`
 
@@ -201,6 +209,12 @@ _Default:_ `'wip'`
 - Any sensible non-empty `string` of valid git branch name characters can be used
 - A `function` that takes in the name of the current HEAD branch (_ie_ `'master'`) and returns the new branch name.
 
+##### `repo`
+
+An already open `NodeGit.Repository` to use. When set, `repoPath`, `ceilingDirs` and `discoverAcrossFs` are ignored.
+
+_Default:_ `undefined`
+
 ##### `repoPath`
 
 Controls where we start looking for the git repository.
@@ -227,13 +241,12 @@ _Default:_ `true`
 
 ## Upgrading from 0.x
 
-- `nodegit` is gone; `git` must be on the `PATH` instead.
-- The package is ESM. `import wip from '@cinderblock/node-git-wip'`, or `require()` on a Node with `require(esm)`.
-- The `repo` option (an open `NodeGit.Repository`) no longer exists. Use `repoPath`.
+- Node.js 22 or newer, and nodegit 0.28.
+- The package is ESM with TypeScript types. `import wip from '@cinderblock/node-git-wip'`, or `require()` on a Node
+  with `require(esm)`.
 - Options from config files are now actually applied, and commits without an explicit `author` work again.
   Both were broken in 0.6.x.
-- Environment variables like `GIT_DIR` and `GIT_INDEX_FILE` are ignored, as before, so running inside a git hook
-  still targets the repository found from `repoPath` and its real index.
+- Numeric `flags` work again (0.6.x threw a `ReferenceError`).
 
 ## Development
 

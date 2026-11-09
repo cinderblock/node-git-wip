@@ -1,7 +1,7 @@
 {
   "name": "@cinderblock/node-git-wip",
   "version": "0.6.3",
-  "description": "git-wip implementation in node, using the git CLI (no native modules)",
+  "description": "git-wip implementation in node, using libgit2 via nodegit",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,7 +39,9 @@
     "wip",
     "git-wip",
     "work-in-progress",
-    "snapshot"
+    "snapshot",
+    "nodegit",
+    "libgit2"
   ],
   "author": "Cameron Tacklind <cameron@tacklind.com>",
   "license": "MIT",
@@ -48,11 +50,16 @@
   },
   "homepage": "https://github.com/cinderblock/node-git-wip#readme",
   "dependencies": {
-    "cosmiconfig": "^9.0.2"
+    "cosmiconfig": "^9.0.2",
+    "nodegit": "^0.28.0-alpha.38"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/nodegit": "^0.28.11",
     "prettier": "^3.9.10",
     "typescript": "^7.0.2"
-  }
+  },
+  "trustedDependencies": [
+    "nodegit"
+  ]
 }
