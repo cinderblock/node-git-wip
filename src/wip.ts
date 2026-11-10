@@ -1,21 +1,18 @@
-import { statSync } from 'node:fs';
 import path from 'node:path';
+import NodeGit from 'nodegit';
 import { loadConfig } from './config.ts';
-import { git, gitOut } from './git.ts';
-import {
-  createSignature,
-  formatSignature,
-  parseSignature,
-  signatureNow,
-  signatureToString,
-  type Signature,
-  type SignatureInput,
-} from './signature.ts';
-import type { DebugFunction, WipFailure, WipOptions, WipResult } from './types.ts';
+import type { DebugFunction, SignatureInput, WipFailure, WipOptions, WipResult } from './types.ts';
 
-const ADD_FORCE = 1;
-const ADD_DISABLE_PATHSPEC_MATCH = 2;
-const ADD_CHECK_PATHSPEC = 4;
+const { Index, Repository, Signature } = NodeGit;
+type Signature = NodeGit.Signature;
+
+// @types/nodegit declares this as an ambient const enum, which can't be read under verbatimModuleSyntax. Read the
+// runtime object instead.
+const ADD_OPTION = (
+  Index as unknown as {
+    ADD_OPTION: Record<'ADD_DEFAULT' | 'ADD_FORCE' | 'ADD_DISABLE_PATHSPEC_MATCH' | 'ADD_CHECK_PATHSPEC', number>;
+  }
+).ADD_OPTION;
 
 function branchShortName(long: string): string {
   const res = long.match(/^refs\/heads\/(.+)$/);
@@ -32,27 +29,16 @@ function resolveDebug(debug: WipOptions['debug']): DebugFunction {
 }
 
 /** Turn an `author`/`committer` option into a signature, or `undefined` to mean "use the default". */
-function toSignature(input: string | SignatureInput | undefined | null): Signature | undefined {
+async function toSignature(input: string | SignatureInput | undefined | null): Promise<Signature | undefined> {
   if (!input) return undefined;
-  if (typeof input == 'string') return parseSignature(input);
+  if (typeof input == 'string') return Signature.fromBuffer(input);
   if (input.name && input.email) {
     if (input.time && input.offset !== undefined) {
-      return createSignature(input.name, input.email, input.time, input.offset);
+      return Signature.create(input.name, input.email, input.time, input.offset);
     }
-    return signatureNow(input.name, input.email);
+    return Signature.now(input.name, input.email);
   }
   throw Error('what the heck? How did we get here...');
-}
-
-/** nodegit's `Repository#defaultSignature()`: `user.name`/`user.email` from git config, or `unknown`. */
-async function defaultSignature(cwd: string): Promise<Signature> {
-  const get = async (key: string) =>
-    (await git(['config', '--get', key], { cwd, okCodes: [0, 1] })).stdout.replace(/\r?\n$/, '');
-  try {
-    return signatureNow(await get('user.name'), await get('user.email'));
-  } catch {
-    return signatureNow('unknown', 'unknown@example.com');
-  }
 }
 
 function addFlags(flags: WipOptions['flags']): number {
@@ -60,83 +46,12 @@ function addFlags(flags: WipOptions['flags']): number {
     if (!Number.isInteger(flags) || flags < 0 || flags > 7) throw Error('Bad flags');
     return flags;
   }
-  if (!flags) return 0;
-  let res = 0;
-  if (flags.force) res += ADD_FORCE;
-  if (flags.disablePathspecMatch) res += ADD_DISABLE_PATHSPEC_MATCH;
-  if (flags.checkPathspec) res += ADD_CHECK_PATHSPEC;
+  let res = ADD_OPTION.ADD_DEFAULT;
+  if (!flags) return res;
+  if (flags.force) res += ADD_OPTION.ADD_FORCE;
+  if (flags.disablePathspecMatch) res += ADD_OPTION.ADD_DISABLE_PATHSPEC_MATCH;
+  if (flags.checkPathspec) res += ADD_OPTION.ADD_CHECK_PATHSPEC;
   return res;
-}
-
-/** First paragraph of the message on one line, like `git_commit_summary`. Used for the reflog. */
-function summary(message: string): string {
-  return (message.trimStart().split(/\n[ \t\r]*\n/)[0] ?? '').replace(/\s*\n\s*/g, ' ').trimEnd();
-}
-
-/**
- * Stage files like libgit2's `git_index_add_all`: add new and modified files and remove deleted ones, limited to
- * `pathspec` when given. Unlike `git add`, pathspecs that match nothing (or only ignored files) are not an error.
- */
-async function addAll(cwd: string, pathspec: string[], flags: number, debug: DebugFunction): Promise<void> {
-  const force = (flags & ADD_FORCE) != 0;
-  const literal = (flags & ADD_DISABLE_PATHSPEC_MATCH) != 0;
-  const literalArgs = literal ? ['--literal-pathspecs'] : [];
-
-  if (!pathspec.length) {
-    const { stdout } = await git(['add', '--all', '--verbose', ...(force ? ['--force'] : [])], { cwd });
-    for (const line of stdout.split('\n')) if (line.trim()) debug('index add:', line.trim());
-    return;
-  }
-
-  if (!force && flags & ADD_CHECK_PATHSPEC) {
-    // libgit2 rejects pathspecs that exactly name an untracked file that is ignored.
-    for (const spec of pathspec) {
-      if (!literal && /[*?[]/.test(spec)) continue;
-      const tracked = await gitOut(['--literal-pathspecs', 'ls-files', '-z', '--cached', '--', spec], { cwd });
-      if (tracked.split('\0').includes(spec)) continue;
-      let isFile = false;
-      try {
-        isFile = statSync(path.join(cwd, spec)).isFile();
-      } catch {}
-      if (!isFile) continue;
-      const ignored = await git(['check-ignore', '-q', '--no-index', '--', spec], { cwd, okCodes: [0, 1] });
-      if (ignored.exitCode == 0) throw Error(`pathspec contains ignored file '${spec}'`);
-    }
-  }
-
-  // Resolve the pathspec to concrete paths ourselves so that non-matching entries are silently skipped.
-  const listed = await gitOut(
-    [
-      ...literalArgs,
-      'ls-files',
-      '-z',
-      '--cached',
-      '--others',
-      ...(force ? [] : ['--exclude-standard']),
-      '--',
-      ...pathspec,
-    ],
-    { cwd }
-  );
-  const paths = [...new Set(listed.split('\0').filter(Boolean))];
-  if (!paths.length) {
-    debug('index add: no paths matched pathspec');
-    return;
-  }
-
-  const { stdout } = await git(
-    [
-      '--literal-pathspecs',
-      'add',
-      '--all',
-      '--verbose',
-      ...(force ? ['--force'] : []),
-      '--pathspec-from-file=-',
-      '--pathspec-file-nul',
-    ],
-    { cwd, input: paths.join('\0') }
-  );
-  for (const line of stdout.split('\n')) if (line.trim()) debug('index add:', line.trim());
 }
 
 /**
@@ -159,7 +74,6 @@ export async function wip(options: WipOptions = {}): Promise<WipResult | WipFail
     debugSteps = !!(options.debugSteps === undefined ? config.debugSteps : options.debugSteps);
     debug = resolveDebug(options.debug === undefined ? config.debug : options.debug);
 
-    const repoPath = path.resolve(options.repoPath || config.repoPath || '.');
     const discoverAcrossFs = !!(options.discoverAcrossFs === undefined
       ? config.discoverAcrossFs
       : options.discoverAcrossFs);
@@ -183,40 +97,39 @@ export async function wip(options: WipOptions = {}): Promise<WipResult | WipFail
 
     debug('ceiling dirs:', ceilingDirs);
 
-    const discoverEnv: Record<string, string> = {};
-    if (ceilingDirs) discoverEnv.GIT_CEILING_DIRECTORIES = ceilingDirs;
-    if (discoverAcrossFs) discoverEnv.GIT_DISCOVERY_ACROSS_FILESYSTEM = '1';
+    let repo: NodeGit.Repository;
+    if (options.repo instanceof Repository) {
+      debug('Using passed repository object');
+      repo = options.repo;
+    } else {
+      debugStep('find');
+      const start = path.resolve(options.repoPath || config.repoPath || '.');
+      const found = await Repository.discover(start, discoverAcrossFs ? 1 : 0, ceilingDirs);
+      debug('git dir:', found);
 
-    debugStep('find');
-    const gitDir = await gitOut(['rev-parse', '--absolute-git-dir'], { cwd: repoPath, env: discoverEnv });
-    debug('git dir:', gitDir);
-
-    debugStep('open');
-    const cwd = await gitOut(['rev-parse', '--show-toplevel'], { cwd: repoPath, env: discoverEnv });
-    debug('work tree:', cwd);
+      debugStep('open');
+      repo = await Repository.open(found);
+    }
 
     let author: Signature;
     const authorOption = options.author === undefined ? config.author : options.author;
     if (!authorOption) {
       debugStep('get default signature');
-      author = await defaultSignature(cwd);
+      author = await repo.defaultSignature();
     } else {
       if (typeof authorOption == 'string') debugStep('get string signature');
-      author = toSignature(authorOption)!;
+      author = (await toSignature(authorOption))!;
     }
-    debug('author:', signatureToString(author));
+    debug('author:', author.toString());
 
     const committerOption = options.committer === undefined ? config.committer : options.committer;
     if (committerOption && typeof committerOption == 'string') debugStep('get string signature');
-    const committer = toSignature(committerOption) ?? author;
-    debug('committer:', signatureToString(committer));
+    const committer = (await toSignature(committerOption)) ?? author;
+    debug('committer:', committer.toString());
 
     debugStep('get head');
-    const symbolic = await git(['symbolic-ref', '-q', 'HEAD'], { cwd, okCodes: [0, 1] });
-    // A detached HEAD is reported as "HEAD", which is then rejected below, like nodegit did.
-    const headName = symbolic.exitCode == 0 ? symbolic.stdout.trim() : 'HEAD';
-    // Fails on an unborn branch (no commits yet).
-    const headTarget = await gitOut(['rev-parse', '--verify', 'HEAD^{commit}'], { cwd });
+    const head = await repo.head();
+    const headName = head.name();
 
     debugStep('get head short name');
     const headNameShort = branchShortName(headName);
@@ -238,84 +151,60 @@ export async function wip(options: WipOptions = {}): Promise<WipResult | WipFail
 
     debug('prefixedShortName:', prefixedShortName);
 
-    const branchName = 'refs/heads/' + prefixedShortName;
-
-    let branchTarget: string;
+    let branch: NodeGit.Reference;
     let newBranch = false;
     try {
       debugStep('create branch');
-      if (prefixedShortName == 'HEAD') throw Error("'HEAD' is not a valid branch name");
-      // Empty old value: only create, never move an existing branch.
-      await git(['update-ref', '-m', `branch: Created from ${headTarget}`, branchName, headTarget, ''], { cwd });
-      branchTarget = headTarget;
-      debug('new branch created:', branchName);
+      branch = await repo.createBranch(prefixedShortName, head.target(), false);
+      debug('new branch created:', branch.name());
       newBranch = true;
     } catch {
       debugStep('get branch');
-      branchTarget = await gitOut(['rev-parse', '--verify', branchName], { cwd });
-      debug('use existing branch:', branchName);
+      branch = await repo.getBranch(prefixedShortName);
+      debug('use existing branch:', branch.name());
     }
 
-    let parents: string[];
+    let parents: NodeGit.Oid[];
     const historyStrategy = options.historyStrategy === undefined ? config.historyStrategy : options.historyStrategy;
     if (newBranch || historyStrategy == 'parallel' || historyStrategy == 'manual') {
-      parents = [branchTarget];
+      parents = [branch.target()];
     } else if (historyStrategy === undefined || historyStrategy == 'merge') {
-      parents = [branchTarget, headTarget];
+      parents = [branch.target(), head.target()];
     } else if (historyStrategy == 'clear' || historyStrategy == 'reset') {
       debugStep('create branch force');
-      if (headName == branchName) {
-        throw Error(`cannot force update branch '${prefixedShortName}' as it is the current HEAD of the repository.`);
-      }
-      await git(['update-ref', '-m', `branch: Created from ${headTarget}`, branchName, headTarget], { cwd });
-      branchTarget = headTarget;
-      debug('new branch created:', branchName);
-      parents = [headTarget];
+      branch = await repo.createBranch(prefixedShortName, head.target(), true);
+      debug('new branch created:', branch.name());
+      parents = [head.target()];
     } else {
       throw Error('Unknown parent strategy: ' + historyStrategy);
     }
 
-    debug('branch:', branchTarget);
+    debug('branch:', branch.target().tostrS());
 
-    // The git CLI always reads the index fresh from disk.
     debugStep('refresh index');
+    const index = await repo.refreshIndex();
 
     debugStep('index add all');
-    await addAll(cwd, pathspecs, flags, debug);
+    // No per-file callback: nodegit 0.28 segfaults when `addAll` is given a JS callback (seen on Node 24 and 26).
+    await index.addAll(pathspecs, flags);
 
-    // `git add` has already written the index.
     debugStep('index write');
+    await index.write();
 
     debugStep('index write tree');
-    const treeHash = await gitOut(['write-tree'], { cwd });
+    const tree = await index.writeTree();
+
+    const branchName = branch.name();
 
     debugStep('get branch short name');
     const branchNameShort = branchShortName(branchName);
 
     debugStep('create prefixed commit');
-    // Build the commit object byte-for-byte like libgit2 did: no trailing newline is added to the message and no
-    // commit hooks or signing config apply.
-    const commitObject =
-      `tree ${treeHash}\n` +
-      parents.map(p => `parent ${p}\n`).join('') +
-      `author ${formatSignature(author)}\n` +
-      `committer ${formatSignature(committer)}\n` +
-      `\n` +
-      message;
-    const latestHash = await gitOut(['hash-object', '-t', 'commit', '-w', '--no-filters', '--stdin'], {
-      cwd,
-      input: Buffer.from(commitObject, 'utf8'),
-    });
-    const kind = parents.length > 1 ? ' (merge)' : parents.length == 0 ? ' (initial)' : '';
-    // Old value = first parent: fail rather than clobber if the branch moved underneath us, like libgit2.
-    await git(['update-ref', '-m', `commit${kind}: ${summary(message)}`, branchName, latestHash, parents[0]!], {
-      cwd,
-      env: { GIT_COMMITTER_NAME: committer.name, GIT_COMMITTER_EMAIL: committer.email },
-    });
+    const commit = await repo.createCommit(branchName, author, committer, message, tree, parents);
 
     const res: WipResult = {
-      latestHash,
-      treeHash,
+      latestHash: commit.tostrS(),
+      treeHash: tree.tostrS(),
       branchName,
       branchNameShort,
       headName,

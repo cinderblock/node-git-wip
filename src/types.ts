@@ -1,6 +1,14 @@
-import type { SignatureInput } from './signature.ts';
+import type { Repository } from 'nodegit';
 
-export type { SignatureInput };
+/** Signature as accepted in options: `{ name, email }` uses the current time, add `time` and `offset` to pin it. */
+export interface SignatureInput {
+  name: string;
+  email: string;
+  /** Seconds since the Unix epoch. */
+  time?: number;
+  /** Timezone offset from UTC, in minutes. */
+  offset?: number;
+}
 
 /**
  * How the wip branch's history is shaped.
@@ -50,6 +58,8 @@ export interface WipOptions {
   postfix?: string;
   /** Prefix for the wip branch name, or a function mapping the HEAD branch name to the wip branch name. */
   prefix?: string | ((headNameShort: string) => string);
+  /** An already open repository. If set, `repoPath`, `ceilingDirs` and `discoverAcrossFs` are ignored. */
+  repo?: Repository;
   /** Where to start looking for the repository. Default: current working directory. */
   repoPath?: string;
   /** Separator between prefix and branch name. Default `'/'`. */

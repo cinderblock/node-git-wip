@@ -10,15 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Node first: nodegit's install script downloads (or builds) the native module for whichever node is on PATH.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run build
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
       # Install the packed tarball like a consumer would and run the bin in a scratch repo.
       - name: Smoke test packed package
         run: |
@@ -43,15 +44,28 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         node: ['22', '24', '26']
+        # Node 26 on Windows compiles nodegit from source. nodegit's bundled node-gyp (11.5) can't find Visual
+        # Studio 18 (2026), which windows-latest ships, so build that one on the VS 2022 image.
+        exclude:
+          - os: windows-latest
+            node: '26'
+        include:
+          - os: windows-2022
+            node: '26'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+      # Library targets Node: tests run on Node (see engines), installed with Bun.
+      # Node first: nodegit's install script fetches the native module for the node on PATH.
+      # nodegit publishes prebuilt binaries for Node 22 and 24. On Node 26 it compiles libgit2 from source.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - name: nodegit build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libkrb5-dev libssl-dev pkg-config
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
-      # Library targets Node: tests run on Node (see engines), installed with Bun.
-      - uses: actions/setup-node@v7
-        with:
-          node-version: ${{ matrix.node }}
       - run: node --test test/wip.test.ts
